@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+
+env:
+  REGISTRY: ghcr.io
+  ORG: ${{ github.repository_owner }}
+
+jobs:
+  # ── Определяем, какие сервисы изменились ──────────────────────────────────
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      cex-futures-engine: ${{ steps.filter.outputs.cex-futures-engine }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            cex-futures-engine:
+              - 'services/cex-futures-engine/**'
+              - 'packages/shared/**'
+              - 'packages/db/**'
+              - 'package.json'
+              - 'turbo.json'
+
+  # ── Build & Deploy только изменившихся сервисов ───────────────────────────
+  build:
+    needs: changes
+    if: needs.changes.outputs.cex-futures-engine == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set tags
+        id: meta
+        run: |
+          SHA_TAG="sha-${{ github.sha }}"
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            FLOAT_TAG="latest"
+            ENV="prod"
+            K8S_PATH="k8s/prod/kustomization.yaml"
+          else
+            FLOAT_TAG="dev-latest"
+            ENV="dev"
+            K8S_PATH="k8s/dev/kustomization.yaml"
+          fi
+          echo "sha_tag=$SHA_TAG"         >> $GITHUB_OUTPUT
+          echo "float_tag=$FLOAT_TAG"     >> $GITHUB_OUTPUT
+          echo "env=$ENV"                 >> $GITHUB_OUTPUT
+          echo "k8s_path=$K8S_PATH"       >> $GITHUB_OUTPUT
+          echo "image=${{ env.REGISTRY }}/${{ env.ORG }}/spread-service/cex-futures-engine" >> $GITHUB_OUTPUT
+
+      - name: Build & push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/cex-futures-engine/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.float_tag }}
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha_tag }}
+
+      # ── Bump image tag в fleet-repo ──────────────────────────────────────
+      - name: Checkout fleet-repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.ORG }}/fleet-repo   # <-- заменить если другое имя
+          token: ${{ secrets.FLEET_REPO_TOKEN }}
+          path: fleet-repo
+
+      - name: Update kustomization image tag
+        run: |
+          cd fleet-repo/spread-service
+          sed -i "s|newTag:.*|newTag: ${{ steps.meta.outputs.sha_tag }}|g" \
+            "${{ steps.meta.outputs.k8s_path }}"
+
+      - name: Commit & push fleet-repo
+        run: |
+          cd fleet-repo
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git diff --staged --quiet || git commit \
+            -m "chore(cex-futures-engine): ${{ steps.meta.outputs.env }} → ${{ steps.meta.outputs.sha_tag }}"
+          git push

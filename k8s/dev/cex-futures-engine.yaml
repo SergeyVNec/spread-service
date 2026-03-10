@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cex-futures-engine
+  namespace: spread-service
+  labels:
+    app: cex-futures-engine
+    env: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cex-futures-engine
+  template:
+    metadata:
+      labels:
+        app: cex-futures-engine
+        env: dev
+    spec:
+      containers:
+        - name: cex-futures-engine
+          image: ghcr.io/YOUR_ORG/spread-service/cex-futures-engine:dev-latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3001   # health-check port
+          env:
+            - name: NODE_ENV
+              value: "development"
+            - name: LOG_LEVEL
+              value: "debug"
+            - name: SCAN_INTERVAL_MS
+              value: "10000"        # 10s в dev (5s в prod)
+            - name: DB_WRITE_INTERVAL_MS
+              value: "15000"
+          envFrom:
+            - secretRef:
+                name: spread-service-secrets
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+      imagePullSecrets:
+        - name: ghcr-secret

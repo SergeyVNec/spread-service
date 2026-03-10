@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spread-service
+  namespace: spread-service
+  labels:
+    app: spread-service
+    env: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spread-service
+  template:
+    metadata:
+      labels:
+        app: spread-service
+        env: dev
+    spec:
+      containers:
+        - name: spread-service
+          image: ghcr.io/sergeyvnec/spread-service:dev-latest   # <-- заменить YOUR_ORG
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "development"
+            - name: PORT
+              value: "3000"
+            - name: LOG_LEVEL
+              value: "debug"
+          envFrom:
+            - secretRef:
+                name: spread-service-secrets
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      imagePullSecrets:
+        - name: ghcr-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spread-service
+  namespace: spread-service
+spec:
+  selector:
+    app: spread-service
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: ClusterIP

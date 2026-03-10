@@ -1,0 +1,25 @@
+{
+  "name": "@spread/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./queries/*": "./dist/queries/*.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "kysely": "^0.27.0",
+    "pg": "^8.11.0",
+    "@spread/shared": "*"
+  },
+  "devDependencies": {
+    "typescript": "*",
+    "@types/pg": "^8.11.0"
+  }
+}

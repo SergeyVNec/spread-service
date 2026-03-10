@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cex-futures-engine
+  namespace: spread-service
+  labels:
+    app: cex-futures-engine
+    env: prod
+spec:
+  replicas: 1   # Движок stateful — 1 реплика, иначе двойная запись в БД
+  selector:
+    matchLabels:
+      app: cex-futures-engine
+  template:
+    metadata:
+      labels:
+        app: cex-futures-engine
+        env: prod
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3001"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: cex-futures-engine
+          image: ghcr.io/YOUR_ORG/spread-service/cex-futures-engine:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3001
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: SCAN_INTERVAL_MS
+              value: "5000"
+            - name: DB_WRITE_INTERVAL_MS
+              value: "10000"
+          envFrom:
+            - secretRef:
+                name: spread-service-secrets
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "150m"
+            limits:
+              memory: "256Mi"
+              cpu: "400m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3
+      imagePullSecrets:
+        - name: ghcr-secret
+      terminationGracePeriodSeconds: 30  # SIGTERM → 30s → SIGKILL

@@ -1,0 +1,53 @@
+services:
+
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: spreadservice
+      POSTGRES_USER: spread
+      POSTGRES_PASSWORD: spread_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./packages/db/schema:/docker-entrypoint-initdb.d:ro  # автоматически применяет schema
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spread -d spreadservice"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  cex-futures-engine:
+    build:
+      context: .
+      dockerfile: services/cex-futures-engine/Dockerfile
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql://spread:spread_dev@postgres:5432/spreadservice
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: development
+      LOG_LEVEL: debug
+      SCAN_INTERVAL_MS: "10000"
+    env_file:
+      - .env   # API ключи бирж
+    ports:
+      - "3001:3001"  # health-check
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
