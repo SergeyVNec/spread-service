@@ -1,8 +1,8 @@
 import ccxt from 'ccxt'
 import type { ExchangeId, ExchangeMarket, Ticker } from '@spread/shared'
 import { CEX_FUTURES_EXCHANGES } from '@spread/shared'
-import { config } from '../config.js'
-import { logger } from '../logger.js'
+import { config } from '../config'
+import { logger } from '../logger'
 
 type CcxtExchange = InstanceType<typeof ccxt.Exchange>
 

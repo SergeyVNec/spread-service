@@ -5,8 +5,8 @@ import {
   REDIS_KEY_TICKER,
 } from '@spread/shared'
 import type { ExchangeId, Ticker } from '@spread/shared'
-import { getRedisPub, getRedis } from '../redis.js'
-import { logger } from '../logger.js'
+import { getRedisPub, getRedis } from '../redis'
+import { logger } from '../logger'
 
 /** TTL последнего тикера в Redis (30 секунд) */
 const TICKER_TTL_SEC = 30

@@ -1,4 +1,4 @@
-import type { ExchangeId } from '../types/index.js'
+import type { ExchangeId } from '../types/index'
 
 /** Биржи, поддерживаемые cex-futures движком */
 export const CEX_FUTURES_EXCHANGES: ExchangeId[] = [

@@ -1,5 +1,5 @@
 import { sql } from 'kysely'
-import { getDb } from '../client.js'
+import { getDb } from '../client'
 import type { ExchangeId } from '@spread/shared'
 import type { SpreadCandle } from '@spread/shared'
 

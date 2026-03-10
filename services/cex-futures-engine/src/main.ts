@@ -1,7 +1,7 @@
-import { CexFuturesEngine } from './engine.js'
+import { CexFuturesEngine } from './engine'
 import { closeDb }          from '@spread/db'
-import { closeRedis }       from './redis.js'
-import { logger }           from './logger.js'
+import { closeRedis }       from './redis'
+import { logger }           from './logger'
 import http                 from 'node:http'
 
 const engine = new CexFuturesEngine()

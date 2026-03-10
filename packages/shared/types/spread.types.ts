@@ -1,4 +1,4 @@
-import type { ExchangeId, MarketType } from './exchange.types.js'
+import type { ExchangeId, MarketType } from './exchange.types'
 
 export type EngineType = 'cex-futures' | 'spot-futures' | 'dex-futures'
 

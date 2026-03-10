@@ -1,7 +1,7 @@
 import type { SpreadSnapshot } from '@spread/shared'
 import { insertSpreadSnapshots } from '@spread/db'
-import { config } from '../config.js'
-import { logger } from '../logger.js'
+import { config } from '../config'
+import { logger } from '../logger'
 
 /**
  * Буферизирует снапшоты и пишет в БД батчами каждые DB_WRITE_INTERVAL_MS.

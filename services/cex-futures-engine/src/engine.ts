@@ -1,11 +1,11 @@
 import type { ExchangeId } from '@spread/shared'
-import { ExchangeScanner }    from './scanner/exchange-scanner.js'
-import { SpreadCalculator }   from './calculator/spread-calculator.js'
-import { StatsCache }         from './calculator/stats-cache.js'
-import { SpreadPublisher }    from './storage/publisher.js'
-import { DbWriter }           from './storage/db-writer.js'
-import { config }             from './config.js'
-import { logger }             from './logger.js'
+import { ExchangeScanner }    from './scanner/exchange-scanner'
+import { SpreadCalculator }   from './calculator/spread-calculator'
+import { StatsCache }         from './calculator/stats-cache'
+import { SpreadPublisher }    from './storage/publisher'
+import { DbWriter }           from './storage/db-writer'
+import { config }             from './config'
+import { logger }             from './logger'
 
 export class CexFuturesEngine {
   private scanner    = new ExchangeScanner()

@@ -1,5 +1,5 @@
-import type { ExchangeId } from './exchange.types.js'
-import type { EngineType } from './spread.types.js'
+import type { ExchangeId } from './exchange.types'
+import type { EngineType } from './spread.types'
 
 export type OrderSide = 'buy' | 'sell'
 export type OrderType = 'market' | 'limit' | 'post-only'

@@ -1,5 +1,5 @@
-import type { Ticker, ExchangeId } from '../types/index.js'
-import type { SpreadSnapshot } from '../types/spread.types.js'
+import type { Ticker, ExchangeId } from '../types/index'
+import type { SpreadSnapshot } from '../types/spread.types'
 
 export const TAKER_FEE: Record<ExchangeId, number> = {
   mexc:    0.0002,  // 0.02%

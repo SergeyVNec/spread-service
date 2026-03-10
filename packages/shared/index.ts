@@ -1,3 +1,3 @@
-export * from './types/index.js'
-export * from './utils/spread-calc.js'
-export * from './constants/exchanges.js'
+export * from './types/index'
+export * from './utils/spread-calc'
+export * from './constants/exchanges'
