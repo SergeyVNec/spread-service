@@ -1,6 +1,6 @@
 import type { ExchangeId } from '@spread/shared'
 import { REDIS_KEY_STATS, REDIS_STATS_TTL_SEC } from '@spread/shared'
-import { getSpreadStats } from '@spread/db/queries/spreads.queries.js'
+import { getSpreadStats } from '@spread/db'
 import { getRedis } from '../redis.js'
 import { logger } from '../logger.js'
 
