@@ -59,11 +59,13 @@ jobs:
             ENV="dev"
             K8S_PATH="k8s/dev/kustomization.yaml"
           fi
+          # GHCR требует lowercase — приводим владельца к нижнему регистру
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "sha_tag=$SHA_TAG"         >> $GITHUB_OUTPUT
           echo "float_tag=$FLOAT_TAG"     >> $GITHUB_OUTPUT
           echo "env=$ENV"                 >> $GITHUB_OUTPUT
           echo "k8s_path=$K8S_PATH"       >> $GITHUB_OUTPUT
-          echo "image=${{ env.REGISTRY }}/${{ env.ORG }}/spread-service/cex-futures-engine" >> $GITHUB_OUTPUT
+          echo "image=${{ env.REGISTRY }}/${OWNER}/spread-service/cex-futures-engine" >> $GITHUB_OUTPUT
 
       - name: Build & push Docker image
         uses: docker/build-push-action@v5
