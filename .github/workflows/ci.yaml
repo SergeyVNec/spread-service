@@ -77,26 +77,17 @@ jobs:
             ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.float_tag }}
             ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha_tag }}
 
-      # ── Bump image tag в fleet-repo ──────────────────────────────────────
-      - name: Checkout fleet-repo
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.ORG }}/fleet-repo   # <-- заменить если другое имя
-          token: ${{ secrets.FLEET_REPO_TOKEN }}
-          path: fleet-repo
-
+      # ── Bump image tag в kustomization текущего репо ────────────────────
       - name: Update kustomization image tag
         run: |
-          cd fleet-repo/spread-service
           sed -i "s|newTag:.*|newTag: ${{ steps.meta.outputs.sha_tag }}|g" \
             "${{ steps.meta.outputs.k8s_path }}"
 
-      - name: Commit & push fleet-repo
+      - name: Commit & push image tag bump
         run: |
-          cd fleet-repo
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
+          git add "${{ steps.meta.outputs.k8s_path }}"
           git diff --staged --quiet || git commit \
             -m "chore(cex-futures-engine): ${{ steps.meta.outputs.env }} → ${{ steps.meta.outputs.sha_tag }}"
           git push
