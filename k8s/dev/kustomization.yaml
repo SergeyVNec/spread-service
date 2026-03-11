@@ -12,4 +12,4 @@ resources:
 
 images:
   - name: ghcr.io/sergeyvnec/spread-service/cex-futures-engine
-    newTag: sha-478fb1e7936610211c658600e528aa0dd6a3ba8c
+    newTag: sha-7aac9518aed354f8940e76baa7632af57453d415
