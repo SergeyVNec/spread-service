@@ -1,3 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: spread-service
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 20Gi
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -41,35 +52,18 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "1000m"
-          readinessProbe:
-            exec:
-              command: ["pg_isready", "-U", "spread", "-d", "spreadservice"]
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            failureThreshold: 6
-          livenessProbe:
-            exec:
-              command: ["pg_isready", "-U", "spread", "-d", "spreadservice"]
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            failureThreshold: 3
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
             - name: init-sql
               mountPath: /docker-entrypoint-initdb.d
       volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-data
         - name: init-sql
           configMap:
             name: spread-db-init-sql
-  volumeClaimTemplates:
-    - metadata:
-        name: postgres-data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 20Gi
 ---
 apiVersion: v1
 kind: Service
@@ -83,4 +77,4 @@ spec:
     - port: 5432
       targetPort: 5432
   type: ClusterIP
-  clusterIP: None   # Headless — StatefulSet best practice
+  clusterIP: None
