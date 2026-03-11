@@ -11,5 +11,5 @@ resources:
   - cex-futures-engine.yaml
 
 images:
-  - name: ghcr.io/YOUR_ORG/spread-service/cex-futures-engine
+  - name: ghcr.io/sergeyvnec/spread-service/cex-futures-engine
     newTag: latest
