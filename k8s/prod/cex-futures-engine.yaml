@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: cex-futures-engine
-          image: ghcr.io/YOUR_ORG/spread-service/cex-futures-engine:latest
+          image: ghcr.io/sergeyvnec/spread-service/cex-futures-engine:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3001
