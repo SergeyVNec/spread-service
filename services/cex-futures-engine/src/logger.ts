@@ -3,11 +3,5 @@ import { config } from './config'
 
 export const logger = pino({
   level: config.LOG_LEVEL,
-  ...(config.NODE_ENV === 'development' && {
-    transport: {
-      target: 'pino-pretty',
-      options: { colorize: true, translateTime: 'HH:MM:ss' },
-    },
-  }),
   base: { service: 'cex-futures-engine' },
 })
