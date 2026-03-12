@@ -11,7 +11,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [cex-futures-engine, api-server]
+        include:
+          # Monorepo services — build context = repo root
+          - service: cex-futures-engine
+            context: .
+          - service: api-server
+            context: .
+          # Frontend — self-contained, build context = its own dir
+          - service: frontend
+            context: services/frontend
 
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +52,7 @@ jobs:
       - name: Build & push image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ${{ matrix.context }}
           file: services/${{ matrix.service }}/Dockerfile
           push: true
           tags: |
@@ -64,7 +72,6 @@ jobs:
           git add "${{ steps.meta.outputs.k8s_path }}"
           git diff --staged --quiet && exit 0
           git commit -m "chore(${{ matrix.service }}): ${{ steps.meta.outputs.env }} → ${{ steps.meta.outputs.sha_tag }}"
-          # Retry push up to 5 times to handle concurrent matrix jobs
           for i in 1 2 3 4 5; do
             git pull --rebase && git push && break || sleep $((i * 3))
           done

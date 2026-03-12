@@ -10,6 +10,7 @@ resources:
   - redis.yaml
   - cex-futures-engine.yaml
   - api-server.yaml
+  - frontend.yaml
   - ingress.yaml
 
 images:
@@ -17,3 +18,5 @@ images:
     newTag: sha-4908866b2a5c
   - name: ghcr.io/sergeyvnec/spread-service/api-server
     newTag: sha-4908866b2a5c
+  - name: ghcr.io/sergeyvnec/spread-service/frontend
+    newTag: dev-latest
