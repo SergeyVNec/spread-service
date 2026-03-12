@@ -5,6 +5,9 @@ metadata:
   namespace: spread-service
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web
+    # Enable WebSocket support
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 spec:
   rules:
     - host: spread.46.225.6.40.nip.io
