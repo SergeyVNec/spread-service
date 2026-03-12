@@ -25,7 +25,12 @@ function scoreBarColor(score: number) {
   return 'bg-muted'
 }
 
-function ExchangeBadge({ name }: { name: string }) {
+function safeFloat(v: string | null | undefined): number {
+  const n = parseFloat(v ?? '0')
+  return isNaN(n) ? 0 : n
+}
+
+function ExchangeBadge({ name }: { name?: string | null }) {
   const colors: Record<string, string> = {
     mexc:    'bg-blue/10 text-blue border-blue/20',
     bybit:   'bg-yellow/10 text-yellow border-yellow/20',
@@ -48,52 +53,57 @@ export default function PairsTable() {
   const [flash, setFlash] = useState<FlashMap>({})
   const [connected, setConnected] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const prevRef = useRef<Record<RowKey, SpreadOpportunity>>({})
 
-  // Initial load
   useEffect(() => {
-    fetchOpportunities(50).then(data => {
-      setRows(data)
-      const map: Record<RowKey, SpreadOpportunity> = {}
-      data.forEach(r => { map[rowKey(r)] = r })
-      prevRef.current = map
-    })
+    fetchOpportunities(50)
+      .then(data => {
+        const valid = data.filter(r => r?.symbol && r?.exchange_long && r?.exchange_short)
+        setRows(valid)
+        const map: Record<RowKey, SpreadOpportunity> = {}
+        valid.forEach(r => { map[rowKey(r)] = r })
+        prevRef.current = map
+      })
+      .catch(e => setError(String(e)))
   }, [])
 
   const handleMessage = useCallback((data: unknown) => {
-    const msg = data as { type: string; data?: SpreadOpportunity[] }
-    if (msg.type === 'connected') { setConnected(true); return }
-    if (msg.type !== 'opportunities' || !Array.isArray(msg.data)) return
+    try {
+      const msg = data as { type: string; data?: SpreadOpportunity[] }
+      if (msg.type === 'connected') { setConnected(true); return }
+      if (msg.type === 'pong') return
+      if (msg.type !== 'opportunities' || !Array.isArray(msg.data)) return
 
-    const incoming = (msg.data as SpreadOpportunity[]).filter(
-      r => r && r.symbol && r.exchange_long && r.exchange_short
-    )
-    const newFlash: FlashMap = {}
+      const incoming = msg.data.filter(
+        r => r && r.symbol && r.exchange_long && r.exchange_short
+      )
+      const newFlash: FlashMap = {}
 
-    incoming.forEach(r => {
-      const key = rowKey(r)
-      const prev = prevRef.current[key]
-      if (prev) {
-        const newSpread = parseFloat(r.spread_pct)
-        const oldSpread = parseFloat(prev.spread_pct)
-        newFlash[key] = newSpread > oldSpread ? 'green' : newSpread < oldSpread ? 'red' : null
-      }
-      prevRef.current[key] = r
-    })
+      incoming.forEach(r => {
+        const key = rowKey(r)
+        const prev = prevRef.current[key]
+        if (prev) {
+          const newSpread = safeFloat(r.spread_pct)
+          const oldSpread = safeFloat(prev.spread_pct)
+          newFlash[key] = newSpread > oldSpread ? 'green' : newSpread < oldSpread ? 'red' : null
+        }
+        prevRef.current[key] = r
+      })
 
-    setRows(incoming)
-    setFlash(newFlash)
-    setLastUpdate(new Date())
-
-    // Clear flash after animation
-    setTimeout(() => setFlash({}), 600)
+      setRows(incoming)
+      setFlash(newFlash)
+      setLastUpdate(new Date())
+      setTimeout(() => setFlash({}), 600)
+    } catch (e) {
+      console.error('WS message error:', e)
+    }
   }, [])
 
   useWebSocket(getWsUrl(), handleMessage)
 
   return (
     <div className="animate-fade-in">
-      {/* Header row */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <h1 className="font-mono text-xs font-medium text-muted uppercase tracking-widest">
@@ -108,15 +118,16 @@ export default function PairsTable() {
             <span className={clsx('w-1.5 h-1.5 rounded-full', connected ? 'bg-green animate-pulse' : 'bg-red')} />
             {connected ? 'WS Connected' : 'Connecting...'}
           </span>
-          {lastUpdate && (
-            <span className="text-muted">
-              {lastUpdate.toLocaleTimeString()}
-            </span>
-          )}
+          {lastUpdate && <span>{lastUpdate.toLocaleTimeString()}</span>}
         </div>
       </div>
 
-      {/* Table */}
+      {error && (
+        <div className="mb-4 px-4 py-2 border border-red/20 bg-red/5 rounded text-red font-mono text-xs">
+          API Error: {error}
+        </div>
+      )}
+
       <div className="border border-border rounded-lg overflow-hidden bg-surface">
         <div className="overflow-x-auto">
           <table className="w-full text-xs font-mono">
@@ -132,20 +143,14 @@ export default function PairsTable() {
             <tbody>
               {rows.map((row) => {
                 const key = rowKey(row)
-                const spread = parseFloat(row.spread_pct)
-                const netSpread = parseFloat(row.spread_net_pct)
-                const zScore = parseFloat(row.z_score)
-                const score = parseFloat(row.score)
-                const flashCls = flash[key] === 'green' ? 'flash-green' : flash[key] === 'red' ? 'flash-red' : ''
+                const spread    = safeFloat(row.spread_pct)
+                const netSpread = safeFloat(row.spread_net_pct)
+                const zScore    = safeFloat(row.z_score)
+                const score     = safeFloat(row.score)
+                const flashCls  = flash[key] === 'green' ? 'flash-green' : flash[key] === 'red' ? 'flash-red' : ''
 
                 return (
-                  <tr
-                    key={key}
-                    className={clsx(
-                      'border-b border-border/50 hover:bg-dim/50 transition-colors cursor-pointer group',
-                      flashCls
-                    )}
-                  >
+                  <tr key={key} className={clsx('border-b border-border/50 hover:bg-dim/50 transition-colors cursor-pointer group', flashCls)}>
                     <td className="px-4 py-3">
                       <Link href={`/pair/${encodeURIComponent(key)}`} className="block">
                         <span className="text-bright font-semibold group-hover:text-green transition-colors">
@@ -153,16 +158,10 @@ export default function PairsTable() {
                         </span>
                       </Link>
                     </td>
+                    <td className="px-4 py-3"><ExchangeBadge name={row.exchange_long} /></td>
+                    <td className="px-4 py-3"><ExchangeBadge name={row.exchange_short} /></td>
                     <td className="px-4 py-3">
-                      <ExchangeBadge name={row.exchange_long} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <ExchangeBadge name={row.exchange_short} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-green font-semibold">
-                        {spread.toFixed(4)}%
-                      </span>
+                      <span className="text-green font-semibold">{spread.toFixed(4)}%</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={netSpread > 0 ? 'text-green' : 'text-red'}>
@@ -170,10 +169,7 @@ export default function PairsTable() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={clsx(
-                        'font-semibold',
-                        zScore >= 2 ? 'text-green' : zScore >= 1 ? 'text-yellow' : 'text-muted'
-                      )}>
+                      <span className={clsx('font-semibold', zScore >= 2 ? 'text-green' : zScore >= 1 ? 'text-yellow' : 'text-muted')}>
                         {zScore.toFixed(2)}σ
                       </span>
                     </td>
@@ -183,15 +179,12 @@ export default function PairsTable() {
                           {score.toFixed(0)}
                         </span>
                         <div className="score-bar flex-1">
-                          <div
-                            className={clsx('score-bar-fill', scoreBarColor(score))}
-                            style={{ width: `${score}%` }}
-                          />
+                          <div className={clsx('score-bar-fill', scoreBarColor(score))} style={{ width: `${score}%` }} />
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-muted text-[10px]">
-                      {new Date(row.time).toLocaleTimeString()}
+                      {row.time ? new Date(row.time).toLocaleTimeString() : '—'}
                     </td>
                   </tr>
                 )
@@ -199,7 +192,7 @@ export default function PairsTable() {
               {rows.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center text-muted">
-                    Loading opportunities...
+                    {connected ? 'Waiting for data...' : 'Loading opportunities...'}
                   </td>
                 </tr>
               )}
