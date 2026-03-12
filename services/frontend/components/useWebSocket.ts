@@ -7,31 +7,36 @@ export function useWebSocket(url: string, onMessage: MsgHandler) {
   const ws = useRef<WebSocket | null>(null)
   const onMsgRef = useRef(onMessage)
   onMsgRef.current = onMessage
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const connect = useCallback(() => {
     if (ws.current?.readyState === WebSocket.OPEN) return
 
-    const socket = new WebSocket(url)
-    ws.current = socket
+    try {
+      const socket = new WebSocket(url)
+      ws.current = socket
 
-    socket.onopen = () => {
-      socket.send(JSON.stringify({ action: 'subscribe', channel: 'opportunities' }))
-    }
+      socket.onopen = () => {
+        socket.send(JSON.stringify({ action: 'subscribe', channel: 'opportunities' }))
+      }
 
-    socket.onmessage = (e) => {
-      try { onMsgRef.current(JSON.parse(e.data)) } catch {}
-    }
+      socket.onmessage = (e) => {
+        try { onMsgRef.current(JSON.parse(e.data)) } catch {}
+      }
 
-    socket.onclose = () => {
-      // Reconnect after 3s
-      setTimeout(connect, 3000)
-    }
+      socket.onclose = () => {
+        timerRef.current = setTimeout(connect, 3000)
+      }
 
-    socket.onerror = () => { socket.close() }
+      socket.onerror = () => { socket.close() }
+    } catch {}
   }, [url])
 
   useEffect(() => {
     connect()
-    return () => { ws.current?.close() }
+    return () => {
+      ws.current?.close()
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
   }, [connect])
 }
