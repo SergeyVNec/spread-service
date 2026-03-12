@@ -1,10 +1,12 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
+COPY package.json ./
 RUN npm install
 
 COPY . .
+# Ensure public dir exists (Next.js requires it)
+RUN mkdir -p public
 RUN npm run build
 
 # ── Runtime ──────────────────────────────────────────────────────────────────
@@ -19,7 +21,6 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Entrypoint script для runtime env injection
 COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh
 
