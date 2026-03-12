@@ -9,7 +9,10 @@ resources:
   - postgres.yaml
   - redis.yaml
   - cex-futures-engine.yaml
+  - api-server.yaml
 
 images:
   - name: ghcr.io/sergeyvnec/spread-service/cex-futures-engine
-    newTag: sha-7aac9518aed354f8940e76baa7632af57453d415
+    newTag: dev-latest
+  - name: ghcr.io/sergeyvnec/spread-service/api-server
+    newTag: dev-latest

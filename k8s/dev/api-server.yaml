@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-server
+  namespace: spread-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-server
+  template:
+    metadata:
+      labels:
+        app: api-server
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: api-server
+          image: ghcr.io/sergeyvnec/spread-service/api-server:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "development"
+            - name: PORT
+              value: "3000"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: CORS_ORIGIN
+              value: "*"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: spread-service-secrets
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: spread-service-secrets
+                  key: REDIS_URL
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-server
+  namespace: spread-service
+spec:
+  selector:
+    app: api-server
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: ClusterIP

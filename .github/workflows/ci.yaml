@@ -2,85 +2,58 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
-
-env:
-  REGISTRY: ghcr.io
-  ORG: ${{ github.repository_owner }}
+    branches: [dev, main]
 
 jobs:
-  # ── Определяем, какие сервисы изменились ──────────────────────────────────
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      cex-futures-engine: ${{ steps.filter.outputs.cex-futures-engine }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            cex-futures-engine:
-              - 'services/cex-futures-engine/**'
-              - 'packages/shared/**'
-              - 'packages/db/**'
-              - 'package.json'
-              - 'turbo.json'
-
-  # ── Build & Deploy только изменившихся сервисов ───────────────────────────
   build:
-    needs: changes
-    if: needs.changes.outputs.cex-futures-engine == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
+
+    strategy:
+      matrix:
+        service: [cex-futures-engine, api-server]
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set env metadata
+        id: meta
+        run: |
+          SHA_TAG="sha-$(echo ${{ github.sha }} | cut -c1-12)"
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            ENV=prod
+            K8S_PATH=k8s/prod/kustomization.yaml
+          else
+            ENV=dev
+            K8S_PATH=k8s/dev/kustomization.yaml
+          fi
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${OWNER}/spread-service/${{ matrix.service }}"
+          echo "sha_tag=${SHA_TAG}"   >> $GITHUB_OUTPUT
+          echo "env=${ENV}"           >> $GITHUB_OUTPUT
+          echo "k8s_path=${K8S_PATH}" >> $GITHUB_OUTPUT
+          echo "image=${IMAGE}"       >> $GITHUB_OUTPUT
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set tags
-        id: meta
-        run: |
-          SHA_TAG="sha-${{ github.sha }}"
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            FLOAT_TAG="latest"
-            ENV="prod"
-            K8S_PATH="k8s/prod/kustomization.yaml"
-          else
-            FLOAT_TAG="dev-latest"
-            ENV="dev"
-            K8S_PATH="k8s/dev/kustomization.yaml"
-          fi
-          # GHCR требует lowercase — приводим владельца к нижнему регистру
-          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "sha_tag=$SHA_TAG"         >> $GITHUB_OUTPUT
-          echo "float_tag=$FLOAT_TAG"     >> $GITHUB_OUTPUT
-          echo "env=$ENV"                 >> $GITHUB_OUTPUT
-          echo "k8s_path=$K8S_PATH"       >> $GITHUB_OUTPUT
-          echo "image=${{ env.REGISTRY }}/${OWNER}/spread-service/cex-futures-engine" >> $GITHUB_OUTPUT
-
-      - name: Build & push Docker image
+      - name: Build & push image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: services/cex-futures-engine/Dockerfile
+          file: services/${{ matrix.service }}/Dockerfile
           push: true
           tags: |
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.float_tag }}
             ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha_tag }}
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.env }}-latest
 
-      # ── Bump image tag в kustomization текущего репо ────────────────────
       - name: Update kustomization image tag
         run: |
-          sed -i "s|newTag:.*|newTag: ${{ steps.meta.outputs.sha_tag }}|g" \
+          sed -i \
+            "/name: .*\/${{ matrix.service }}/{n;s|newTag:.*|newTag: ${{ steps.meta.outputs.sha_tag }}|}" \
             "${{ steps.meta.outputs.k8s_path }}"
 
       - name: Commit & push image tag bump
@@ -89,5 +62,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "${{ steps.meta.outputs.k8s_path }}"
           git diff --staged --quiet || git commit \
-            -m "chore(cex-futures-engine): ${{ steps.meta.outputs.env }} → ${{ steps.meta.outputs.sha_tag }}"
+            -m "chore(${{ matrix.service }}): ${{ steps.meta.outputs.env }} → ${{ steps.meta.outputs.sha_tag }}"
           git push
