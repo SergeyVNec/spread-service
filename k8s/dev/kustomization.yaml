@@ -17,6 +17,6 @@ images:
   - name: ghcr.io/sergeyvnec/spread-service/cex-futures-engine
     newTag: sha-cce088196b44
   - name: ghcr.io/sergeyvnec/spread-service/api-server
-    newTag: sha-cce088196b44
+    newTag: sha-6f497bebfd60
   - name: ghcr.io/sergeyvnec/spread-service/frontend
     newTag: dev-latest
