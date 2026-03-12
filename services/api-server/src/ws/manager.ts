@@ -1,4 +1,4 @@
-import type { WebSocket } from '@fastify/websocket'
+import type { WebSocket } from 'ws'
 import { getRedisSub } from '../redis'
 import { REDIS_CHANNEL_OPPORTUNITIES } from '@spread/shared'
 
