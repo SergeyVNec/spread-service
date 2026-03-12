@@ -10,6 +10,7 @@ resources:
   - redis.yaml
   - cex-futures-engine.yaml
   - api-server.yaml
+  - ingress.yaml
 
 images:
   - name: ghcr.io/sergeyvnec/spread-service/cex-futures-engine
