@@ -34,10 +34,11 @@ function ExchangeBadge({ name }: { name: string }) {
     okx:     'bg-green/10 text-green border-green/20',
     gate:    'bg-red/10 text-red border-red/20',
   }
-  const cls = colors[name.toLowerCase()] ?? 'bg-dim text-muted border-border'
+  const key = (name ?? '').toLowerCase()
+  const cls = colors[key] ?? 'bg-dim text-muted border-border'
   return (
     <span className={clsx('px-1.5 py-0.5 rounded border text-[10px] font-mono font-medium uppercase tracking-wider', cls)}>
-      {name}
+      {name ?? '—'}
     </span>
   )
 }
@@ -64,7 +65,9 @@ export default function PairsTable() {
     if (msg.type === 'connected') { setConnected(true); return }
     if (msg.type !== 'opportunities' || !Array.isArray(msg.data)) return
 
-    const incoming = msg.data as SpreadOpportunity[]
+    const incoming = (msg.data as SpreadOpportunity[]).filter(
+      r => r && r.symbol && r.exchange_long && r.exchange_short
+    )
     const newFlash: FlashMap = {}
 
     incoming.forEach(r => {
