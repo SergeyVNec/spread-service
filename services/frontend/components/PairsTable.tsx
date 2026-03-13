@@ -26,12 +26,16 @@ function scoreBarColor(s: number) {
 
 function ExchangeBadge({ name }: { name?: string | null }) {
   const colors: Record<string, string> = {
-    mexc:    'bg-blue/10 text-blue border-blue/20',
-    bybit:   'bg-yellow/10 text-yellow border-yellow/20',
-    binance: 'bg-yellow/10 text-yellow border-yellow/20',
-    bitget:  'bg-purple/10 text-purple border-purple/20',
-    okx:     'bg-green/10 text-green border-green/20',
-    gate:    'bg-red/10 text-red border-red/20',
+    mexc:        'bg-blue/10 text-blue border-blue/20',
+    bybit:       'bg-yellow/10 text-yellow border-yellow/20',
+    binance:     'bg-yellow/10 text-yellow border-yellow/20',
+    bitget:      'bg-purple/10 text-purple border-purple/20',
+    okx:         'bg-green/10 text-green border-green/20',
+    gate:        'bg-red/10 text-red border-red/20',
+    kucoin:      'bg-green/10 text-green border-green/20',
+    bingx:       'bg-blue/10 text-blue border-blue/20',
+    hyperliquid: 'bg-purple/10 text-purple border-purple/20',
+    aster:       'bg-red/10 text-red border-red/20',
   }
   const cls = colors[(name ?? '').toLowerCase()] ?? 'bg-dim text-muted border-border'
   return (

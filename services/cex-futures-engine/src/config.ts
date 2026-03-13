@@ -22,8 +22,8 @@ const EnvSchema = z.object({
   BITGET_PASSPHRASE:  z.string().optional(),
 
   // Параметры сканирования
-  MIN_VOLUME_USD:     z.coerce.number().default(5_000_000),
-  MIN_NET_SPREAD_PCT: z.coerce.number().default(0.1),
+  MIN_VOLUME_USD:     z.coerce.number().default(0),
+  MIN_NET_SPREAD_PCT: z.coerce.number().default(0),
   SCAN_INTERVAL_MS:   z.coerce.number().default(5_000),
   DB_WRITE_INTERVAL_MS: z.coerce.number().default(10_000),
 

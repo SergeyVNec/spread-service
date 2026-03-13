@@ -6,8 +6,8 @@ import {
   calcStats,
   CEX_FUTURES_EXCHANGES,
 } from '@spread/shared'
-import { config } from '../config'
-import { logger } from '../logger'
+import { config } from '../config.js'
+import { logger } from '../logger.js'
 
 export class SpreadCalculator {
   /**
@@ -48,9 +48,6 @@ export class SpreadCalculator {
           const longSide  = available[i]!
           const shortSide = available[j]!
 
-          // Спред имеет смысл только если цена на short > long
-          if (shortSide.ticker.bid <= longSide.ticker.ask) continue
-
           const base = calcSpread(longSide.ticker, shortSide.ticker)
 
           // Берём Z-score из кеша (обновляется реже, из БД)
@@ -63,7 +60,7 @@ export class SpreadCalculator {
           const score = this.calcScore(base, zScore, longSide.ticker, shortSide.ticker)
           const isOpportunity =
             base.spreadNetPct >= config.MIN_NET_SPREAD_PCT &&
-            score >= 40
+            score >= 30
 
           results.push({
             ...base,

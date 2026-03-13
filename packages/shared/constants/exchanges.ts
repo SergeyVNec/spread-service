@@ -1,4 +1,4 @@
-import type { ExchangeId } from '../types/index'
+import type { ExchangeId } from '../types/index.js'
 
 /** Биржи, поддерживаемые cex-futures движком */
 export const CEX_FUTURES_EXCHANGES: ExchangeId[] = [
@@ -8,6 +8,10 @@ export const CEX_FUTURES_EXCHANGES: ExchangeId[] = [
   'okx',
   'gate',
   'bitget',
+  'kucoin',
+  'bingx',
+  'hyperliquid',
+  'aster',
 ]
 
 /** Минимальный объём 24h (USD) для включения пары в сканирование */

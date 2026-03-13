@@ -6,6 +6,9 @@ export type ExchangeId =
   | 'gate'
   | 'bitget'
   | 'kucoin'
+  | 'bingx'
+  | 'hyperliquid'
+  | 'aster'
 
 export type MarketType = 'futures' | 'spot' | 'dex'
 
