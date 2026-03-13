@@ -162,12 +162,10 @@ export class ExchangeScanner {
           const tickerMap = new Map<string, Ticker>()
 
           for (const [rawSymbol, t] of Object.entries(tickers)) {
-            const tc = t as unknown as Record<string, unknown>  // ccxt ticker has more fields than our type
-            // Нормализуем символ несколькими способами (разные биржи заполняют по-разному)
-            const normalizedSymbol =
-              (tc['base'] && tc['quote'])     ? `${tc['base']}/${tc['quote']}`     :
-              (tc['baseId'] && tc['quoteId']) ? `${tc['baseId']}/${tc['quoteId']}` :
-              rawSymbol.replace(/:.*$/, '').replace(/USDT$/, '/USDT') // fallback
+            // ccxt всегда заполняет t.symbol в формате 'BTC/USDT:USDT' для фьючерсов
+            // Нормализуем убирая settle часть: 'BTC/USDT:USDT' → 'BTC/USDT'
+            const sym = (t.symbol ?? rawSymbol) as string
+            const normalizedSymbol = sym.includes(':') ? sym.split(':')[0]! : sym
             if (!this.commonSymbols.has(normalizedSymbol)) continue
             if (!t.bid || !t.ask) continue  // минимальное требование — наличие стакана
 
