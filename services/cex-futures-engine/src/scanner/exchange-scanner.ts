@@ -93,7 +93,7 @@ export class ExchangeScanner {
             if (!m) continue
             // Берём только USDT-маржированные бессрочные контракты
             if (!m['active']) continue
-            if (m['settle'] !== 'USDT' && m['quote'] !== 'USDT') continue
+            if (!['USDT', 'USDC'].includes(m['settle'] as string) && !['USDT', 'USDC'].includes(m['quote'] as string)) continue
             if (m['type'] !== 'swap' && m['type'] !== 'future') continue
             if (m['expiry'] !== undefined && m['expiry'] !== null) continue  // только perps
 
@@ -118,8 +118,9 @@ export class ExchangeScanner {
               settleCurrency: m['settle'] as string | undefined,
             }
 
-            // Нормализуем символ: 'BTC/USDT:USDT' → 'BTC/USDT'
-            const normalizedSymbol = `${base}/${quote}`
+            // Нормализуем символ: 'BTC/USDT:USDT' → 'BTC/USDT', 'BTC/USDC:USDC' → 'BTC/USDC'
+            const rawSym = (m['symbol'] as string | undefined) ?? `${base}/${quote}`
+            const normalizedSymbol = rawSym.includes(':') ? rawSym.split(':')[0]! : `${base}/${quote}`
             marketMap.set(normalizedSymbol, market)
           }
 
