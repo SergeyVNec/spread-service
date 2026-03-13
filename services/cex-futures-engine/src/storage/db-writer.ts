@@ -1,7 +1,7 @@
 import type { SpreadSnapshot } from '@spread/shared'
-import { insertSpreadSnapshots } from '@spread/db'
-import { config } from '../config'
-import { logger } from '../logger'
+import { insertSpreadSnapshots } from '@spread/db/queries/spreads.queries.js'
+import { config } from '../config.js'
+import { logger } from '../logger.js'
 
 /**
  * Буферизирует снапшоты и пишет в БД батчами каждые DB_WRITE_INTERVAL_MS.
@@ -41,9 +41,18 @@ export class DbWriter {
     this.isFlushInProgress = true
     const batch = this.buffer.splice(0, this.buffer.length)
 
+    // PostgreSQL лимит: 65535 параметров на запрос.
+    // 17 колонок × ~3800 строк = ~64600 — безопасный размер чанка.
+    const CHUNK_SIZE = 3000
+    let written = 0
+
     try {
-      await insertSpreadSnapshots(batch)
-      logger.debug({ count: batch.length }, 'Snapshots written to DB')
+      for (let i = 0; i < batch.length; i += CHUNK_SIZE) {
+        const chunk = batch.slice(i, i + CHUNK_SIZE)
+        await insertSpreadSnapshots(chunk)
+        written += chunk.length
+      }
+      logger.debug({ count: written }, 'Snapshots written to DB')
     } catch (err) {
       logger.error({ err, count: batch.length }, 'Failed to write snapshots to DB — data lost')
     } finally {
