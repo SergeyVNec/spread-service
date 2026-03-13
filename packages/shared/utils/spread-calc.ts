@@ -1,24 +1,30 @@
-import type { Ticker, ExchangeId } from '../types/index'
-import type { SpreadSnapshot } from '../types/spread.types'
+import type { Ticker, ExchangeId } from '../types/index.js'
+import type { SpreadSnapshot } from '../types/spread.types.js'
 
 export const TAKER_FEE: Record<ExchangeId, number> = {
-  mexc:    0.0002,  // 0.02%
-  binance: 0.0004,  // 0.04%
-  bybit:   0.00055, // 0.055%
-  okx:     0.0005,  // 0.05%
-  gate:    0.00075, // 0.075%
-  bitget:  0.0006,  // 0.06%
-  kucoin:  0.0006,  // 0.06%
+  mexc:        0.0002,  // 0.02%
+  binance:     0.0004,  // 0.04%
+  bybit:       0.00055, // 0.055%
+  okx:         0.0005,  // 0.05%
+  gate:        0.00075, // 0.075%
+  bitget:      0.0006,  // 0.06%
+  kucoin:      0.0006,  // 0.06%
+  bingx:       0.0005,  // 0.05%
+  hyperliquid: 0.00035, // 0.035%
+  aster:       0.0005,  // 0.05%
 }
 
 export const MAKER_FEE: Record<ExchangeId, number> = {
-  mexc:    0.0,     // 0% (maker rebate на некоторых парах)
-  binance: 0.0002,
-  bybit:   0.0002,
-  okx:     0.0002,
-  gate:    0.0002,
-  bitget:  0.0002,
-  kucoin:  0.0002,
+  mexc:        0.0,
+  binance:     0.0002,
+  bybit:       0.0002,
+  okx:         0.0002,
+  gate:        0.0002,
+  bitget:      0.0002,
+  kucoin:      0.0002,
+  bingx:       0.0002,
+  hyperliquid: 0.0,     // maker rebate
+  aster:       0.0002,
 }
 
 /**
