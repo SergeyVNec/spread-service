@@ -1,5 +1,5 @@
 import type { SpreadSnapshot } from '@spread/shared'
-import { insertSpreadSnapshots } from '@spread/db/queries/spreads.queries.js'
+import { insertSpreadSnapshots } from '@spread/db/queries/spreads.queries'
 import { config } from '../config.js'
 import { logger } from '../logger.js'
 
