@@ -162,7 +162,7 @@ export class ExchangeScanner {
           const tickerMap = new Map<string, Ticker>()
 
           for (const [rawSymbol, t] of Object.entries(tickers)) {
-            const tc = t as Record<string, unknown>  // ccxt ticker has more fields than our type
+            const tc = t as unknown as Record<string, unknown>  // ccxt ticker has more fields than our type
             // Нормализуем символ несколькими способами (разные биржи заполняют по-разному)
             const normalizedSymbol =
               (tc['base'] && tc['quote'])     ? `${tc['base']}/${tc['quote']}`     :
