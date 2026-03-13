@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: cex-futures-engine
-          image: ghcr.io/YOUR_ORG/spread-service/cex-futures-engine:dev-latest
+          image: ghcr.io/sergeyvnec/spread-service/cex-futures-engine:dev-latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3001   # health-check port
@@ -33,7 +33,7 @@ spec:
             - name: DB_WRITE_INTERVAL_MS
               value: "15000"
             - name: MIN_VOLUME_USD
-              value: "200000"     # $500K — разумный минимум, ~500-800 пар
+              value: "500000"     # $500K — разумный минимум, ~500-800 пар
             - name: MIN_NET_SPREAD_PCT
               value: "0"
           envFrom:
