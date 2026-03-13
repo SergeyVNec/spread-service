@@ -88,32 +88,38 @@ export class ExchangeScanner {
           const rawMarkets = await ex.loadMarkets()
           const marketMap = new Map<string, ExchangeMarket>()
 
-          for (const [, m] of Object.entries(rawMarkets)) {
+          for (const [, mRaw] of Object.entries(rawMarkets)) {
+            const m = mRaw as Record<string, unknown> | undefined
+            if (!m) continue
             // Берём только USDT-маржированные бессрочные контракты
-            if (!m.active) continue
-            if (m.settle !== 'USDT' && m.quote !== 'USDT') continue
-            if (m.type !== 'swap' && m.type !== 'future') continue
-            if (m.expiry !== undefined && m.expiry !== null) continue  // только perps
+            if (!m['active']) continue
+            if (m['settle'] !== 'USDT' && m['quote'] !== 'USDT') continue
+            if (m['type'] !== 'swap' && m['type'] !== 'future') continue
+            if (m['expiry'] !== undefined && m['expiry'] !== null) continue  // только perps
+
+            const base  = (m['base']  as string | undefined) ?? ''
+            const quote = (m['quote'] as string | undefined) ?? ''
+            if (!base || !quote) continue
 
             const market: ExchangeMarket = {
               exchange:     id,
-              symbol:       m.symbol,       // 'BTC/USDT:USDT'
-              rawSymbol:    m.id,
-              baseAsset:    m.base,
-              quoteAsset:   m.quote,
+              symbol:       (m['symbol']       as string) ?? '',
+              rawSymbol:    (m['id']            as string) ?? '',
+              baseAsset:    base,
+              quoteAsset:   quote,
               marketType:   'futures',
-              isActive:     m.active ?? true,
-              contractSize: m.contractSize,
-              minOrderSize: m.limits?.amount?.min,
-              maxOrderSize: m.limits?.amount?.max,
-              tickSize:     m.precision?.price,
-              stepSize:     m.precision?.amount,
-              maxLeverage:  m.limits?.leverage?.max,
-              settleCurrency: m.settle,
+              isActive:     (m['active']        as boolean) ?? true,
+              contractSize: m['contractSize']   as number | undefined,
+              minOrderSize: (m['limits'] as any)?.amount?.min,
+              maxOrderSize: (m['limits'] as any)?.amount?.max,
+              tickSize:     (m['precision'] as any)?.price,
+              stepSize:     (m['precision'] as any)?.amount,
+              maxLeverage:  (m['limits'] as any)?.leverage?.max,
+              settleCurrency: m['settle'] as string | undefined,
             }
 
             // Нормализуем символ: 'BTC/USDT:USDT' → 'BTC/USDT'
-            const normalizedSymbol = `${m.base}/${m.quote}`
+            const normalizedSymbol = `${base}/${quote}`
             marketMap.set(normalizedSymbol, market)
           }
 
@@ -156,10 +162,11 @@ export class ExchangeScanner {
           const tickerMap = new Map<string, Ticker>()
 
           for (const [rawSymbol, t] of Object.entries(tickers)) {
+            const tc = t as Record<string, unknown>  // ccxt ticker has more fields than our type
             // Нормализуем символ несколькими способами (разные биржи заполняют по-разному)
             const normalizedSymbol =
-              (t.base && t.quote)   ? `${t.base}/${t.quote}`     :
-              (t.baseId && t.quoteId) ? `${t.baseId}/${t.quoteId}` :
+              (tc['base'] && tc['quote'])     ? `${tc['base']}/${tc['quote']}`     :
+              (tc['baseId'] && tc['quoteId']) ? `${tc['baseId']}/${tc['quoteId']}` :
               rawSymbol.replace(/:.*$/, '').replace(/USDT$/, '/USDT') // fallback
             if (!this.commonSymbols.has(normalizedSymbol)) continue
             if (!t.bid || !t.ask) continue  // минимальное требование — наличие стакана
