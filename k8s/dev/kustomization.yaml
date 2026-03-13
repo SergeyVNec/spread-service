@@ -19,4 +19,4 @@ images:
   - name: ghcr.io/sergeyvnec/spread-service/api-server
     newTag: sha-9a03d1cd577c
   - name: ghcr.io/sergeyvnec/spread-service/frontend
-    newTag: dev-latest
+    newTag: sha-9a03d1cd577c
