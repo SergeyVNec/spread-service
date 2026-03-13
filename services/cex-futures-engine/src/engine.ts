@@ -1,11 +1,11 @@
 import type { ExchangeId } from '@spread/shared'
-import { ExchangeScanner }    from './scanner/exchange-scanner'
-import { SpreadCalculator }   from './calculator/spread-calculator'
-import { StatsCache }         from './calculator/stats-cache'
-import { SpreadPublisher }    from './storage/publisher'
-import { DbWriter }           from './storage/db-writer'
-import { config }             from './config'
-import { logger }             from './logger'
+import { ExchangeScanner }    from './scanner/exchange-scanner.js'
+import { SpreadCalculator }   from './calculator/spread-calculator.js'
+import { StatsCache }         from './calculator/stats-cache.js'
+import { SpreadPublisher }    from './storage/publisher.js'
+import { DbWriter }           from './storage/db-writer.js'
+import { config }             from './config.js'
+import { logger }             from './logger.js'
 
 export class CexFuturesEngine {
   private scanner    = new ExchangeScanner()
@@ -115,8 +115,8 @@ export class CexFuturesEngine {
       for (const sym of tickerMap.keys()) symbols.add(sym)
     }
 
-    // Параллельно запрашиваем статистику для всех пар
-    const fetches: Array<Promise<void>> = []
+    // Собираем все пары
+    const pairs: Array<{ symbol: string; exLong: ExchangeId; exShort: ExchangeId; key: string }> = []
 
     for (const symbol of symbols) {
       for (let i = 0; i < exchanges.length; i++) {
@@ -128,19 +128,26 @@ export class CexFuturesEngine {
           if (!allTickers.get(exLong)?.has(symbol)) continue
           if (!allTickers.get(exShort)?.has(symbol)) continue
 
-          const key = `${symbol}:${exLong}:${exShort}`
-
-          fetches.push(
-            this.statsCache
-              .get(symbol, exLong, exShort)
-              .then(stats => { if (stats) statsMap.set(key, stats) })
-              .catch(() => {})  // не критично если одна пара упала
-          )
+          pairs.push({ symbol, exLong, exShort, key: `${symbol}:${exLong}:${exShort}` })
         }
       }
     }
 
-    await Promise.all(fetches)
+    // Запрашиваем статистику батчами — не более 20 параллельных DB-запросов
+    // (L1/L2 кеш отдаёт мгновенно, реальные DB-запросы только при cache miss)
+    const BATCH_SIZE = 20
+    for (let i = 0; i < pairs.length; i += BATCH_SIZE) {
+      const batch = pairs.slice(i, i + BATCH_SIZE)
+      await Promise.all(
+        batch.map(({ symbol, exLong, exShort, key }) =>
+          this.statsCache
+            .get(symbol, exLong, exShort)
+            .then(stats => { if (stats) statsMap.set(key, stats) })
+            .catch(() => {})
+        )
+      )
+    }
+
     return statsMap
   }
 

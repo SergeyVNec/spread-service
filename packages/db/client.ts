@@ -1,6 +1,6 @@
 import pg from 'pg'
 import { Kysely, PostgresDialect } from 'kysely'
-import type { Database } from './types'
+import type { Database } from './types.js'
 
 const { Pool } = pg
 
@@ -10,7 +10,7 @@ export function getDb(): Kysely<Database> {
   if (!_db) {
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      max: 10,
+      max: 5,              // держим пул маленьким — движок теперь батчует запросы
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 5_000,
     })
