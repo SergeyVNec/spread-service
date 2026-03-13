@@ -33,7 +33,7 @@ spec:
             - name: DB_WRITE_INTERVAL_MS
               value: "15000"
             - name: MIN_VOLUME_USD
-              value: "500000"     # $500K — разумный минимум, ~500-800 пар
+              value: "100000"     # $500K — разумный минимум, ~500-800 пар
             - name: MIN_NET_SPREAD_PCT
               value: "0"
           envFrom:
