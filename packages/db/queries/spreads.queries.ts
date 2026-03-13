@@ -1,5 +1,5 @@
 import { sql } from 'kysely'
-import { getDb } from '../client'
+import { getDb } from '../client.js'
 import type { ExchangeId } from '@spread/shared'
 import type { SpreadCandle } from '@spread/shared'
 
@@ -141,18 +141,44 @@ export async function insertSpreadSnapshots(
 }
 
 /**
- * Получить топ возможностей прямо сейчас (последние снапшоты за 30 сек).
+ * Получить топ возможностей прямо сейчас.
+ * DISTINCT ON гарантирует одну строку на пару (symbol, exchange_long, exchange_short)
+ * с самым свежим снапшотом, затем сортируем по score.
  */
-export async function getTopOpportunities(limit = 20) {
+export async function getTopOpportunities(limit = 50) {
   const db = getDb()
-  const since = new Date(Date.now() - 30_000)
+  const since = new Date(Date.now() - 60_000) // последняя минута
 
-  return db
-    .selectFrom('spread_snapshots')
-    .selectAll()
-    .where('is_opportunity', '=', true)
-    .where('time', '>=', since)
-    .orderBy('score', 'desc')
-    .limit(limit)
-    .execute()
+  // Используем сырой SQL для DISTINCT ON (Postgres/TimescaleDB specific)
+  const rows = await sql<{
+    time: Date
+    engine_type: string
+    symbol: string
+    exchange_long: string
+    exchange_short: string
+    price_long: number
+    price_short: number
+    spread_abs: number
+    spread_pct: number
+    spread_net_pct: number | null
+    funding_rate_long: number | null
+    funding_rate_short: number | null
+    funding_edge_pct: number | null
+    z_score: number | null
+    score: number | null
+    is_opportunity: boolean
+  }>`
+    SELECT * FROM (
+      SELECT DISTINCT ON (symbol, exchange_long, exchange_short)
+        *
+      FROM spread_snapshots
+      WHERE is_opportunity = true
+        AND time >= ${since}
+      ORDER BY symbol, exchange_long, exchange_short, time DESC
+    ) latest
+    ORDER BY score DESC NULLS LAST
+    LIMIT ${limit}
+  `.execute(getDb())
+
+  return rows.rows
 }

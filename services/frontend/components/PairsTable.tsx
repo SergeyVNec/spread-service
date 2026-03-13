@@ -50,16 +50,23 @@ export default function PairsTable() {
   // Initial load + polling fallback every 5s (for when WS is unreliable through Traefik)
   useEffect(() => {
     const load = () => {
-      fetchOpportunities(50)
+      fetchOpportunities(200)
         .then(data => {
           const valid = data.filter(r => r?.symbol && r?.exchange_long && r?.exchange_short)
-          if (valid.length > 0) {
-            setRows(valid)
-            const map: Record<RowKey, SpreadOpportunity> = {}
-            valid.forEach(r => { map[rowKey(r)] = r })
-            prevRef.current = map
-            setLastUpdate(new Date())
-          }
+          if (valid.length === 0) return
+          // Deduplicate: keep only the latest snapshot per pair key
+          const byKey: Record<RowKey, SpreadOpportunity> = {}
+          valid.forEach(r => {
+            const key = rowKey(r)
+            const existing = byKey[key]
+            if (!existing || new Date(r.time) > new Date(existing.time)) {
+              byKey[key] = r
+            }
+          })
+          const deduped = Object.values(byKey).sort((a, b) => parseFloat(b.score) - parseFloat(a.score))
+          setRows(deduped)
+          prevRef.current = byKey
+          setLastUpdate(new Date())
         })
         .catch(e => setError(String(e)))
     }
