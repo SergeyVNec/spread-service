@@ -145,11 +145,12 @@ export async function insertSpreadSnapshots(
  * DISTINCT ON гарантирует одну строку на пару (symbol, exchange_long, exchange_short)
  * с самым свежим снапшотом, затем сортируем по score.
  */
-export async function getTopOpportunities(limit = 50) {
+export async function getTopOpportunities(limit = 200) {
   const db = getDb()
   const since = new Date(Date.now() - 60_000) // последняя минута
 
-  // Используем сырой SQL для DISTINCT ON (Postgres/TimescaleDB specific)
+  // DISTINCT ON: одна строка на пару (самый свежий снапшот)
+  // Показываем ВСЕ пары — фильтрацию делает UI
   const rows = await sql<{
     time: Date
     engine_type: string
@@ -172,8 +173,7 @@ export async function getTopOpportunities(limit = 50) {
       SELECT DISTINCT ON (symbol, exchange_long, exchange_short)
         *
       FROM spread_snapshots
-      WHERE is_opportunity = true
-        AND time >= ${since}
+      WHERE time >= ${since}
       ORDER BY symbol, exchange_long, exchange_short, time DESC
     ) latest
     ORDER BY score DESC NULLS LAST
